@@ -1,0 +1,48 @@
+version: "3.8"
+
+services:
+  # ----------------------------------------------------------------
+  # 1. API Gateway (Kong) -
+  # ----------------------------------------------------------------
+  kong:
+    image: kong:3.4
+    container_name: kong
+    restart: always
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: "/opt/kong/declarative/kong.yml"
+      KONG_PROXY_LISTEN: "0.0.0.0:8000"
+      KONG_ADMIN_LISTEN: "0.0.0.0:8001"
+    ports:
+      - "80:8000" # المنفذ 80 هو منفذ الويب القياسي
+    volumes:
+      - ./api-gateway/kong.yml:/opt/kong/declarative/kong.yml
+    networks:
+      - app-network
+
+  # ----------------------------------------------------------------
+  # 2. Microservices (Connecting to AWS RDS & Kafka)
+  # ----------------------------------------------------------------
+  chat-service:
+    build:
+      context: .
+      dockerfile: chat_service/Dockerfile
+    container_name: chat-service
+    restart: always
+    env_file: .env # يقرأ بيانات RDS و Kafka من ملف .env
+    networks:
+      - app-network
+
+  stt-service:
+    build:
+      context: .
+      dockerfile: stt_service/Dockerfile
+    container_name: stt-service
+    restart: always
+    env_file: .env
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
