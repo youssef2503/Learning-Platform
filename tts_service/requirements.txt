@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+gTTS
+boto3
+confluent-kafka
+pydantic
+python-multipart
