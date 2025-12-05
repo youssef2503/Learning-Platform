@@ -1,0 +1,110 @@
+_format_version: "3.0"
+_comment: "Kong Declarative Configuration for Phase 2 - Fully Compliant"
+
+services:
+  # -----------------------------------
+  # 1. Quiz Service
+  # -----------------------------------
+  - name: quiz-service
+    url: http://quiz-service:8000
+    routes:
+      - name: quiz-route
+        paths:
+          - /api/quiz/
+        strip_path: false
+        plugins:
+          # JWT Authentication Plugin
+          - name: jwt
+            config:
+              claims_to_verify:
+                - exp
+              key_claim_name: sub
+
+          # Rate Limiting Plugin
+          - name: rate-limiting
+            config:
+              minute: 10
+              hour: 600
+              policy: local
+
+          # Logging Plugin
+          - name: file-log
+            config:
+              path: /dev/stdout
+              reopen: true
+
+          # CORS Plugin
+          - name: cors
+            config:
+              origins:
+                - "*"
+              methods:
+                - "GET"
+                - "POST"
+                - "DELETE"
+                - "PUT"
+                - "OPTIONS"
+              headers:
+                - "Content-Type"
+                - "Authorization"
+              exposed_headers:
+                - "X-Total-Count"
+              credentials: true
+              max_age: 3600
+
+  # -----------------------------------
+  # 2. Microservices
+  # -----------------------------------
+
+  - name: tts-service
+    url: http://tts-service:8000
+    routes:
+      - name: tts-route
+        paths:
+          - /api/tts/
+        strip_path: false
+        plugins:
+          - name: jwt
+
+  - name: stt-service
+    url: http://stt-service:8000
+    routes:
+      - name: stt-route
+        paths:
+          - /api/stt/
+        strip_path: false
+        plugins:
+          - name: jwt
+
+  - name: chat-service
+    url: http://chat-service:8000
+    routes:
+      - name: chat-route
+        paths:
+          - /api/chat/
+        strip_path: false
+        plugins:
+          - name: jwt
+
+  - name: document-service
+    url: http://document-service:8000
+    routes:
+      - name: documents-route
+        paths:
+          - /api/documents/
+        strip_path: false
+        plugins:
+          - name: jwt
+
+# ----------------------------------------------------
+# إعدادات الـ JWT Consumer (ضرورية لكي يعمل الـ JWT Plugin)
+# ----------------------------------------------------
+consumers:
+  # تعريف مستهلك (Consumer) يمكن ربطه بالـ JWT
+  - username: platform-user-key
+
+jwt_secrets:
+  # ربط المفتاح السري/العام بالـ Consumer للتحقق من التوكن (Token)
+  - consumer: platform-user-key
+    key: "platform-jwt-issuer" # هذا المفتاح يجب أن يطابق الـ 'iss' أو 'kid' في الـ JWTs القادمة
+    secret: "This_Is_A_Symmetric_Secret_Used_To_Verify_The_JWT_Signature_Replace_Me_In_Production"

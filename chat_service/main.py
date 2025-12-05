@@ -97,6 +97,51 @@ async def send_message(request: ChatRequest):
     
     return {"status": "Message processed and archived"}
 
+@app.get("/api/chat/conversations")
+async def list_conversations(user_id: str):
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database unavailable")
+        
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT DISTINCT user_id, MAX(timestamp) as last_active FROM chat_history WHERE user_id = %s GROUP BY user_id",
+            (user_id,)
+        )
+        rows = cur.fetchall()
+        
+    conn.close()
+    return [{"user_id": row[0], "last_active": row[1]} for row in rows]
+
+@app.get("/api/chat/conversations/{user_id}")
+async def get_conversation_history(user_id: str):
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database unavailable")
+        
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT message, role, timestamp FROM chat_history WHERE user_id = %s ORDER BY timestamp ASC",
+            (user_id,)
+        )
+        rows = cur.fetchall()
+        
+    conn.close()
+    return [{"message": row[0], "role": row[1], "timestamp": row[2]} for row in rows]
+
+@app.delete("/api/chat/conversations/{user_id}")
+async def delete_conversation(user_id: str):
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database unavailable")
+        
+    with conn.cursor() as cur:
+        cur.execute("DELETE FROM chat_history WHERE user_id = %s", (user_id,))
+        
+    conn.commit()
+    conn.close()
+    return {"status": "deleted"}
+
 def transcription_consumer():
     """
     Background worker: Listens for completed transcriptions 

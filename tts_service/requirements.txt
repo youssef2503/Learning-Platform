@@ -2,6 +2,6 @@ fastapi
 uvicorn[standard]
 gTTS
 boto3
-confluent-kafka
+kafka-python
 pydantic
 python-multipart

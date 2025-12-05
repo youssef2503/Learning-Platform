@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # ----------------------------------------------------------------
@@ -8,7 +8,7 @@ services:
     image: kong:3.7
     container_name: kong
     environment:
-      KONG_DATABASE: "off" # نستخدم التكوين التصريحي
+      KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: "/opt/kong/declarative/kong.yml"
       KONG_PROXY_LISTEN: "0.0.0.0:8000, 0.0.0.0:8443 ssl"
       KONG_ADMIN_LISTEN: "0.0.0.0:8001, 0.0.0.0:8444 ssl"
@@ -20,7 +20,12 @@ services:
     networks:
       - app-network
     depends_on:
+      - chat-service
+      - stt-service
+      - tts-service
+      - document-service
       - quiz-service
+
   konga:
     image: pantsel/konga:latest
     container_name: konga
@@ -33,53 +38,154 @@ services:
     depends_on:
       - kong
 
+  # ----------------------------------------------------------------
+  # 2. Microservices
+  # ----------------------------------------------------------------
 
-  # ----------------------------------------------------------------
-  # 2. Quiz Service
-  # ----------------------------------------------------------------
+  chat-service:
+    build:
+      context: .
+      dockerfile: chat_service/Dockerfile
+    container_name: chat-service
+    ports:
+      - "8004:8000"
+    environment:
+      - AWS_REGION=us-east-1
+      - CHAT_BUCKET_NAME=chat-service-storage-dev
+      - DB_HOST=chat-db
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - DB_NAME=chat_db
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    networks:
+      - app-network
+    depends_on:
+      - chat-db
+      - kafka
+
+  stt-service:
+    build:
+      context: .
+      dockerfile: stt_service/Dockerfile
+    container_name: stt-service
+    ports:
+      - "8005:8000"
+    environment:
+      - AWS_REGION=us-east-1
+      - STT_BUCKET_NAME=stt-service-storage-dev
+      - DB_HOST=stt-db
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - DB_NAME=stt_db
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    networks:
+      - app-network
+    depends_on:
+      - stt-db
+      - kafka
+
+  tts-service:
+    build:
+      context: .
+      dockerfile: tts_service/Dockerfile
+    container_name: tts-service
+    ports:
+      - "8003:8000"
+    environment:
+      - AWS_REGION=us-east-1
+      - TTS_BUCKET_NAME=tts-service-storage-dev
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    networks:
+      - app-network
+    depends_on:
+      - kafka
+
+  document-service:
+    build:
+      context: .
+      dockerfile: document_service/Dockerfile
+    container_name: document-service
+    ports:
+      - "8006:8000"
+    environment:
+      - AWS_REGION=us-east-1
+      - DOCUMENT_BUCKET_NAME=document-service-storage-dev
+      - DB_HOST=document-db
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - DB_NAME=document_db
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    networks:
+      - app-network
+    depends_on:
+      - document-db
+      - kafka
+
   quiz-service:
     build:
-      context: ./quiz_service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: quiz_service/Dockerfile
     container_name: quiz-service
     ports:
-      - "8002:8000" # منفذ داخلي للخدمة (يمكن الوصول إليه عبر Kong)
+      - "8002:8000"
     environment:
-      DATABASE_URL: postgresql://user:password@quiz-db:5432/quiz_db
-      KAFKA_BROKERS: kafka:9092
-      # يجب استبدال هذه القيم ببيانات AWS الحقيقية عند النشر
-      AWS_ACCESS_KEY_ID: "YOUR_AWS_ACCESS_KEY_ID"
-      AWS_SECRET_ACCESS_KEY: "YOUR_AWS_SECRET_ACCESS_KEY"
-      S3_BUCKET_NAME: "quiz-service-storage-dev"
-      AWS_REGION: "us-east-1"
+      - AWS_REGION=us-east-1
+      - DB_HOST=quiz-db
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - DB_NAME=quiz_db
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     networks:
       - app-network
     depends_on:
       - quiz-db
       - kafka
-  tts-service:
-    build:
-      context: ./tts_service
-      dockerfile: Dockerfile
-    container_name: tts-service
-    ports:
-      - "8003:8000"
+
+  # ----------------------------------------------------------------
+  # 3. Databases
+  # ----------------------------------------------------------------
+
+  chat-db:
+    image: postgres:15-alpine
+    container_name: chat-db
     environment:
-      KAFKA_BROKERS: kafka:9092
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: chat_db
+    volumes:
+      - chat_data:/var/lib/postgresql/data
     networks:
       - app-network
-    depends_on:
-      - kafka
 
+  stt-db:
+    image: postgres:15-alpine
+    container_name: stt-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: stt_db
+    volumes:
+      - stt_data:/var/lib/postgresql/data
+    networks:
+      - app-network
 
-  # ----------------------------------------------------------------
-  # 3. PostgreSQL Database for Quiz Service
-  # ----------------------------------------------------------------
+  document-db:
+    image: postgres:15-alpine
+    container_name: document-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: document_db
+    volumes:
+      - document_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
   quiz-db:
     image: postgres:15-alpine
     container_name: quiz-db
     environment:
-      POSTGRES_USER: user
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: quiz_db
     volumes:
@@ -88,7 +194,7 @@ services:
       - app-network
 
   # ----------------------------------------------------------------
-  # 4. Kafka and Zookeeper (محاكاة لبيئة AWS MSK)
+  # 4. Kafka and Zookeeper
   # ----------------------------------------------------------------
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
@@ -117,6 +223,9 @@ services:
       - zookeeper
 
 volumes:
+  chat_data:
+  stt_data:
+  document_data:
   quiz_data:
 
 networks:

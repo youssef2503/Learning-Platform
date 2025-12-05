@@ -111,3 +111,41 @@ async def transcribe_audio(file: UploadFile = File(...)):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/stt/transcription/{id}")
+async def get_transcription(id: str):
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database unavailable")
+        
+    with conn.cursor() as cur:
+        cur.execute("SELECT id, filename, text, status, created_at FROM transcriptions WHERE id = %s", (id,))
+        row = cur.fetchone()
+        
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="Transcription not found")
+        
+    return {
+        "id": row[0],
+        "filename": row[1],
+        "text": row[2],
+        "status": row[3],
+        "created_at": row[4]
+    }
+
+@app.get("/api/stt/transcriptions")
+async def list_transcriptions():
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database unavailable")
+        
+    with conn.cursor() as cur:
+        cur.execute("SELECT id, filename, status, created_at FROM transcriptions ORDER BY created_at DESC")
+        rows = cur.fetchall()
+        
+    conn.close()
+    return [
+        {"id": row[0], "filename": row[1], "status": row[2], "created_at": row[3]} 
+        for row in rows
+    ]
