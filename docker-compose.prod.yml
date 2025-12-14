@@ -1,9 +1,7 @@
 version: "3.8"
 
 services:
-  # ----------------------------------------------------------------
-  # 1. API Gateway (Kong) -
-  # ----------------------------------------------------------------
+  # --- Kong Gateway ---
   kong:
     image: kong:3.4
     container_name: kong
@@ -14,30 +12,62 @@ services:
       KONG_PROXY_LISTEN: "0.0.0.0:8000"
       KONG_ADMIN_LISTEN: "0.0.0.0:8001"
     ports:
-      - "80:8000" # المنفذ 80 هو منفذ الويب القياسي
+      - "80:8000"
     volumes:
       - ./api-gateway/kong.yml:/opt/kong/declarative/kong.yml
     networks:
       - app-network
 
-  # ----------------------------------------------------------------
-  # 2. Microservices (Connecting to AWS RDS & Kafka)
-  # ----------------------------------------------------------------
+  # --- Chat Service ---
   chat-service:
     build:
       context: .
       dockerfile: chat_service/Dockerfile
     container_name: chat-service
     restart: always
-    env_file: .env # يقرأ بيانات RDS و Kafka من ملف .env
+    env_file: .env
     networks:
       - app-network
 
+  # --- STT Service ---
   stt-service:
     build:
       context: .
       dockerfile: stt_service/Dockerfile
     container_name: stt-service
+    restart: always
+    env_file: .env
+    networks:
+      - app-network
+
+  # --- TTS Service (New) ---
+  tts-service:
+    build:
+      context: .
+      dockerfile: tts_service/Dockerfile
+    container_name: tts-service
+    restart: always
+    env_file: .env
+    networks:
+      - app-network
+
+  # --- Document Service (New) ---
+  document-service:
+    build:
+      context: .
+      dockerfile: document_service/Dockerfile
+    container_name: document-service
+    restart: always
+    env_file: .env
+    networks:
+      - app-network
+
+  # --- Quiz Service (New) ---
+  quiz-service:
+    build:
+      context: .
+      dockerfile: quiz_service/Dockerfile
+    container_name: quiz-service
     restart: always
     env_file: .env
     networks:
