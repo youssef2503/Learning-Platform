@@ -237,6 +237,22 @@ services:
       timeout: 10s
       retries: 5
 
+  # ----------------------------------------------------------------
+  # 5. Frontend & Verification
+  # ----------------------------------------------------------------
+  frontend:
+    image: nginx:alpine
+    container_name: verification-dashboard
+    ports:
+      - "80:80"
+    volumes:
+      - ./websites/verification-dashboard:/usr/share/nginx/html
+      - ./websites/verification-dashboard/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - kong
+    networks:
+      - app-network
+
 volumes:
   chat_data:
   stt_data:

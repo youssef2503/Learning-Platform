@@ -76,9 +76,31 @@ async def transcribe_audio(file: UploadFile = File(...)):
         s3_client.upload_fileobj(file.file, S3_BUCKET, file_key)
         s3_url = f"s3://{S3_BUCKET}/{file_key}"
         
-        # 2. Process Audio (Placeholder for Whisper/AI model)
-        # TODO: Implement actual model inference here
-        transcribed_text = f"Simulated transcription for {file.filename}"
+        # 2. Process Audio - Actual Transcription
+        try:
+            import speech_recognition as sr
+            
+            # Reset file pointer
+            file.file.seek(0)
+            
+            # Save temporarily
+            temp_path = f"/tmp/{transcription_id}_{file.filename}"
+            with open(temp_path, "wb") as f:
+                f.write(file.file.read())
+            
+            # Recognize speech
+            recognizer = sr.Recognizer()
+            with sr.AudioFile(temp_path) as source:
+                audio_data = recognizer.record(source)
+                transcribed_text = recognizer.recognize_google(audio_data)
+            
+            # Clean up
+            import os
+            os.remove(temp_path)
+            
+        except Exception as e:
+            print(f"Transcription error: {e}")
+            transcribed_text = f"[Transcription failed: {str(e)}] - File: {file.filename}"
         
         # 3. Persist metadata to RDS
         conn = get_db_connection()

@@ -5,3 +5,5 @@ kafka-python
 boto3
 psycopg2-binary
 python-dotenv
+SpeechRecognition
+pydub

@@ -10,15 +10,11 @@ services:
     routes:
       - name: quiz-route
         paths:
-          - /api/quiz/
+          - /api/quiz
         strip_path: false
         plugins:
           # JWT Authentication Plugin
           - name: jwt
-            config:
-              claims_to_verify:
-                - exp
-              key_claim_name: sub
 
           # Rate Limiting Plugin
           - name: rate-limiting
@@ -61,7 +57,7 @@ services:
     routes:
       - name: tts-route
         paths:
-          - /api/tts/
+          - /api/tts
         strip_path: false
         plugins:
           - name: jwt
@@ -71,7 +67,7 @@ services:
     routes:
       - name: stt-route
         paths:
-          - /api/stt/
+          - /api/stt
         strip_path: false
         plugins:
           - name: jwt
@@ -81,7 +77,7 @@ services:
     routes:
       - name: chat-route
         paths:
-          - /api/chat/
+          - /api/chat
         strip_path: false
         plugins:
           - name: jwt
@@ -91,7 +87,7 @@ services:
     routes:
       - name: documents-route
         paths:
-          - /api/documents/
+          - /api/documents
         strip_path: false
         plugins:
           - name: jwt

@@ -6,3 +6,4 @@ pydantic
 python-multipart
 kafka-python
 boto3
+google-generativeai

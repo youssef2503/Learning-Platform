@@ -1,6 +1,6 @@
 
 // --- Configuration ---
-const API_GATEWAY = "http://localhost:8000";
+const API_GATEWAY = ""; // Relative path for Nginx proxy
 const JWT_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwbGF0Zm9ybS1qd3QtaXNzdWVyIiwic3ViIjoidmVyaWZpY2F0aW9uLWRhc2hib2FyZC11c2VyIiwibmFtZSI6IkFkbWluIFVzZXIiLCJyb2xlIjoiYWRtaW4iLCJleHAiOjE3OTcyNDQ1ODF9.lNPCvGnwUjVPBTK8-c9Fgbx9olWuO4Fpc6knbGDTz2A"; // Generated Dev Token
 const USER_ID = "verification-dashboard-user";
 
@@ -56,6 +56,7 @@ document.querySelectorAll('.sidebar li').forEach(item => {
         document.getElementById(targetId).classList.add('active');
 
         state.currentService = targetId;
+        if (targetId === 'chat-section') loadChatHistory();
         if (targetId === 'docs-section') loadDocuments();
         if (targetId === 'quiz-section') loadDocumentsForQuiz();
     });
@@ -65,6 +66,21 @@ document.querySelectorAll('.sidebar li').forEach(item => {
 const chatInput = document.getElementById('chat-input');
 const sendChatBtn = document.getElementById('send-chat-btn');
 const chatHistory = document.getElementById('chat-history');
+
+async function loadChatHistory() {
+    try {
+        const response = await apiCall(`/api/chat/conversations/${USER_ID}`);
+        if (response && response.length > 0) {
+            // Clear existing messages except welcome
+            chatHistory.innerHTML = '';
+            response.forEach(msg => {
+                appendMessage(msg.message, msg.role);
+            });
+        }
+    } catch (e) {
+        console.log("No chat history yet");
+    }
+}
 
 async function appendMessage(text, sender) {
     const div = document.createElement('div');
@@ -184,32 +200,39 @@ ttsBtn.addEventListener('click', async () => {
     const text = ttsInput.value.trim();
     if (!text) return;
 
-    const result = await apiCall('/api/tts/synthesize', 'POST', { text });
-    if (result) {
-        // The backend returns s3_url. Since it's localstack or similar docker, 
-        // accessing S3 url directly might be tricky from browser without CORS/Public access.
-        // But the backend HAS an endpoint /api/tts/audio/{id} that generates a presigned url.
-        // Let's use that.
+    ttsBtn.textContent = "Synthesizing...";
+    ttsBtn.disabled = true;
 
-        // Wait a bit for "processing"
-        ttsBtn.textContent = "Processing...";
+    const result = await apiCall('/api/tts/synthesize', 'POST', { text });
+    if (result && result.request_id) {
+        // Wait a bit for S3 upload
         setTimeout(async () => {
             try {
                 const audioRes = await apiCall(`/api/tts/audio/${result.request_id}`);
+                console.log("Audio response:", audioRes);
+
                 if (audioRes && audioRes.url) {
                     // Create audio player
                     ttsPlayerContainer.innerHTML = `
-                        <audio controls autoplay>
+                        <audio controls autoplay style="width: 100%; margin-top: 10px;">
                             <source src="${audioRes.url}" type="audio/mpeg">
                             Your browser does not support the audio element.
                         </audio>
+                        <p style="font-size: 0.8em; color: #4ade80; margin-top: 5px;">✓ Audio generated successfully</p>
                     `;
+                } else {
+                    ttsPlayerContainer.innerHTML = `<p style="color: #f87171;">Failed to get audio URL. Check logs.</p>`;
                 }
             } catch (e) {
-                alert("Audio generation taking longer than expected. Check logs.");
+                console.error("TTS Error:", e);
+                ttsPlayerContainer.innerHTML = `<p style="color: #f87171;">Error: ${e.message}</p>`;
             }
             ttsBtn.textContent = "Synthesize";
-        }, 2000);
+            ttsBtn.disabled = false;
+        }, 1500);
+    } else {
+        ttsBtn.textContent = "Synthesize";
+        ttsBtn.disabled = false;
     }
 });
 
@@ -257,3 +280,6 @@ sttBtn.addEventListener('click', async () => {
         }, 1000);
     }
 });
+
+// --- Initialize on page load ---
+loadChatHistory();
