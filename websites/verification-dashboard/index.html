@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Learning Platform Verification</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="glass-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h2>CloudVerify</h2>
+            </div>
+            <nav>
+                <ul>
+                    <li class="active" data-target="chat-section">Chat Service</li>
+                    <li data-target="docs-section">Documents</li>
+                    <li data-target="quiz-section">Quiz Service</li>
+                    <li data-target="audio-section">Audio (STT/TTS)</li>
+                </ul>
+            </nav>
+            <div class="status-indicator">
+                <span class="dot"></span> Gateway Connected
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            
+            <!-- Chat Section -->
+            <section id="chat-section" class="active">
+                <header>
+                    <h1>Chat Service</h1>
+                    <p>Real-time conversational AI integration</p>
+                </header>
+                <div class="chat-interface glass-panel">
+                    <div id="chat-history" class="chat-history">
+                        <!-- Messages inject here -->
+                        <div class="message system">Welcome! Start chatting below.</div>
+                    </div>
+                    <div class="chat-input-area">
+                        <input type="text" id="chat-input" placeholder="Type your message...">
+                        <button id="send-chat-btn">Send</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Documents Section -->
+            <section id="docs-section">
+                <header>
+                    <h1>Document Service</h1>
+                    <p>Upload and manage study materials</p>
+                </header>
+                <div class="grid-layout">
+                    <div class="glass-panel upload-panel">
+                        <h3>Upload Document</h3>
+                        <input type="file" id="doc-upload-input">
+                        <button id="upload-doc-btn">Upload</button>
+                    </div>
+                    <div class="glass-panel list-panel">
+                        <h3>Available Documents</h3>
+                        <ul id="doc-list" class="item-list">
+                            <!-- Docs inject here -->
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Quiz Section -->
+            <section id="quiz-section">
+                <header>
+                    <h1>Quiz Service</h1>
+                    <p>Generate assessments from documents</p>
+                </header>
+                <div class="glass-panel quiz-controls">
+                    <label>Select Document:</label>
+                    <select id="quiz-doc-select">
+                        <option value="">Loading documents...</option>
+                    </select>
+                    <button id="generate-quiz-btn">Generate Quiz</button>
+                </div>
+                <div id="quiz-display" class="glass-panel hidden">
+                    <!-- Quiz rendering -->
+                </div>
+            </section>
+
+            <!-- Audio Section -->
+            <section id="audio-section">
+                <header>
+                    <h1>Audio Services</h1>
+                    <p>Speech-to-Text & Text-to-Speech</p>
+                </header>
+                <div class="grid-layout">
+                    <!-- TTS -->
+                    <div class="glass-panel">
+                        <h3>Text to Speech</h3>
+                        <textarea id="tts-input" placeholder="Enter text to synthesize..."></textarea>
+                        <button id="tts-btn">Synthesize</button>
+                        <div id="tts-player-container"></div>
+                    </div>
+
+                    <!-- STT -->
+                    <div class="glass-panel">
+                        <h3>Speech to Text</h3>
+                        <div class="upload-area">
+                            <input type="file" id="stt-upload-input" accept="audio/*">
+                            <button id="stt-btn">Transcribe</button>
+                        </div>
+                        <div id="stt-result" class="result-box">
+                            <span class="placeholder">Transcription will appear here...</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
